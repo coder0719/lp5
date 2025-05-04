@@ -1,13 +1,10 @@
 #include <iostream>
 #include <vector>
-#include <queue>
 #include <omp.h>
-
 using namespace std;
 
-// Graph represented using adjacency list
 class Graph {
-    int V; // Number of vertices
+    int V;
     vector<vector<int>> adj;
 
 public:
@@ -17,8 +14,8 @@ public:
     }
 
     void addEdge(int u, int v) {
-        adj[u].push_back(v); // Undirected graph
-        adj[v].push_back(u);
+        adj[u].push_back(v);
+        adj[v].push_back(u); // For undirected graph
     }
 
     void parallelBFS(int start) {
@@ -32,7 +29,6 @@ public:
         while (!frontier.empty()) {
             vector<int> nextFrontier;
 
-            // Parallel region
             #pragma omp parallel
             {
                 vector<int> localFrontier;
@@ -45,7 +41,6 @@ public:
 
                     for (int v : adj[u]) {
                         if (!visited[v]) {
-                            // Atomic check and set
                             #pragma omp critical
                             {
                                 if (!visited[v]) {
@@ -57,7 +52,6 @@ public:
                     }
                 }
 
-                // Merge local frontiers into the global one
                 #pragma omp critical
                 nextFrontier.insert(nextFrontier.end(), localFrontier.begin(), localFrontier.end());
             }
@@ -70,20 +64,27 @@ public:
 };
 
 int main() {
-    int V = 8; // Number of vertices
+    int V, E;
+    cout << "Enter number of vertices: ";
+    cin >> V;
+
     Graph g(V);
 
-    // Sample edges for undirected graph
-    g.addEdge(0, 1);
-    g.addEdge(0, 3);
-    g.addEdge(1, 2);
-    g.addEdge(3, 4);
-    g.addEdge(4, 5);
-    g.addEdge(2, 6);
-    g.addEdge(5, 7);
+    cout << "Enter number of edges: ";
+    cin >> E;
 
-    // Start BFS from vertex 0
-    g.parallelBFS(0);
+    cout << "Enter edges (u v) each in a new line (0-based indexing):\n";
+    for (int i = 0; i < E; ++i) {
+        int u, v;
+        cin >> u >> v;
+        g.addEdge(u, v);
+    }
+
+    int startNode;
+    cout << "Enter the starting node for BFS: ";
+    cin >> startNode;
+
+    g.parallelBFS(startNode);
 
     return 0;
 }
